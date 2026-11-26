@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<!DOCTYPE html>
+<html lang="id">
+<!DOCTYPE html>
+<html lang="id">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Pencatatan Mutasi Rekening Bank</title>
+  <script>
+    (function() {
+      var base = "https://cdnjs.cloudflare." + "com/ajax/libs/";
+      
+      var css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = base + "bootstrap/5.3.3/css/bootstrap.min.css";
+      document.head.appendChild(css);
+
+      var icon = document.createElement("link");
+      icon.rel = "stylesheet";
+      icon.href = base + "bootstrap-icons/1.11.3/font/bootstrap-icons.min.css";
+      document.head.appendChild(icon);
+    })();
+  </script>
+  <style>
+    body { background-color: #f4f6f9; }
+    .card-saldo { border-left: 5px solid; transition: transform 0.2s; }
+    .card-saldo:hover { transform: translateY(-3px); }
+    .bank-1 { border-left-color: #0d6efd; }
+    .bank-2 { border-left-color: #ffc107; }
+    .bank-3 { border-left-color: #198754; }
+  </style>
+</head>
+
+
+
+<body>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold text-dark"><i class="bi bi-bank2 me-2 text-primary"></i>Mutasi & Saldo Rekening</h3>
+    <button class="btn btn-outline-primary btn-sm" onclick="muatData()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh Saldo
+    </button>
+  </div>
+
+  <!-- KARTU SALDO REAL-TIME 3 BANK -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm card-saldo bank-1">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <span class="badge bg-primary">Kode: B01</span>
+            <small class="text-muted">Real-time</small>
+          </div>
+          <h5 class="card-title mt-2 mb-1">Bank Mandiri_01</h5>
+          <h3 class="fw-bold text-primary mb-0" id="saldo-B01">Rp 0</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm card-saldo bank-2">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <span class="badge bg-warning text-dark">Kode: B02</span>
+            <small class="text-muted">Real-time</small>
+          </div>
+          <h5 class="card-title mt-2 mb-1">Bank Mandiri_02</h5>
+          <h3 class="fw-bold text-dark mb-0" id="saldo-B02">Rp 0</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm card-saldo bank-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <span class="badge bg-success">Kode: B03</span>
+            <small class="text-muted">Real-time</small>
+          </div>
+          <h5 class="card-title mt-2 mb-1">Bank BRI</h5>
+          <h3 class="fw-bold text-success mb-0" id="saldo-B03">Rp 0</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- FORM INPUT MUTASI -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white fw-semibold">
+          <i class="bi bi-pencil-square me-1"></i> Form Input Transaksi
+        </div>
+        <div class="card-body">
+          <form id="formMutasi" onsubmit="prosesSimpan(event)">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tanggal Transaksi</label>
+              <input type="date" class="form-control" id="tanggal" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Kode Transaksi</label>
+              <select class="form-select" id="kodeTransaksi" onchange="cekJenisTransaksi()" required>
+                <option value="" selected disabled>-- Pilih Kode Transaksi --</option>
+                <option value="01">01 - Penerimaan Penjualan Tunai</option>
+                <option value="02">02 - Penerimaan Penjualan QRIS</option>
+                <option value="03">03 - Penerimaan Penjualan E-Wallet</option>
+                <option value="04">04 - Mutasi Rekening (Antar Bank)</option>
+                <option value="05">05 - Pengeluaran Operasional Usaha</option>
+                <option value="06">06 - Pengeluaran Kas Lainnya</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" id="labelBankUtama">Pilih Kode Bank</label>
+              <select class="form-select" id="kodeBank" required>
+                <option value="B01">B01 - Bank Mandiri_01</option>
+                <option value="B02">B02 - Bank Mandiri_02</option>
+                <option value="B03">B03 - Bank BRI</option>
+              </select>
+            </div>
+
+            <div class="mb-3 d-none" id="grupBankTujuan">
+              <label class="form-label fw-semibold text-primary">Ke Bank Tujuan (Mutasi Masuk)</label>
+              <select class="form-select border-primary" id="bankTujuan">
+                <option value="B01">B01 - Bank Mandiri_01</option>
+                <option value="B02" selected>B02 - Bank Mandiri_02</option>
+                <option value="B03">B03 - Bank BRI</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Nominal (Rp)</label>
+              <input type="number" class="form-control" id="nominal" min="1" placeholder="Contoh: 500000" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Catatan</label>
+              <textarea class="form-control" id="catatan" rows="2" placeholder="Opsional..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold" id="btnSimpan">
+              <i class="bi bi-save me-1"></i> Simpan Transaksi
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABEL RIWAYAT & TOMBOL KOREKSI -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-clock-history me-1"></i> 15 Mutasi Terakhir</span>
+          <span class="badge bg-secondary" id="statusLoading">Memuat...</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle" style="font-size: 0.88rem;">
+              <thead class="table-light">
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Bank</th>
+                  <th>Kode & Jenis</th>
+                  <th class="text-end">Masuk</th>
+                  <th class="text-end">Keluar</th>
+                  <th class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabelRiwayat">
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Mengambil data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL POP-UP KOREKSI TRANSAKSI -->
+<div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-1"></i> Koreksi Data Transaksi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form onsubmit="prosesUpdate(event)">
+        <div class="modal-body">
+          <input type="hidden" id="editRowIndex">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tanggal</label>
+            <input type="date" class="form-control" id="editTanggal" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Bank</label>
+            <select class="form-select" id="editKodeBank" required>
+              <option value="B01">B01 - Bank Mandiri_01</option>
+              <option value="B02">B02 - Bank Mandiri_02</option>
+              <option value="B03">B03 - Bank BRI</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Kode Transaksi</label>
+            <select class="form-select" id="editKodeTransaksi" required>
+              <option value="01">01 - Penerimaan Penjualan Tunai</option>
+              <option value="02">02 - Penerimaan Penjualan QRIS</option>
+              <option value="03">03 - Penerimaan Penjualan E-Wallet</option>
+              <option value="04">04 - Mutasi Rekening (Antar Bank)</option>
+              <option value="05">05 - Pengeluaran Operasional Usaha</option>
+              <option value="06">06 - Pengeluaran Kas Lainnya</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nominal (Rp)</label>
+            <input type="number" class="form-control" id="editNominal" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Catatan</label>
+            <textarea class="form-control" id="editCatatan" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-warning fw-bold" id="btnUpdate">Simpan Perubahan</button>
+        </div>
+      </form>
+      <!-- Bootstrap 5 JS Bundle (Wajib agar Modal Pop-up Edit bisa terbuka) -->
+<script src="https://jsdelivr.net"></script>
+
+<script src="https://cloudflare.com"></script>
+
+<script>
+  let daftarRiwayat = [];
+  let modalEditObj;
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById('tanggal').valueAsDate = new Date();
+    muatData();
+  });
+
+  function formatRupiah(angka) {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(angka);
+  }
+
+  function cekJenisTransaksi() {
+    const kode = document.getElementById('kodeTransaksi').value;
+    const grupTujuan = document.getElementById('grupBankTujuan');
+    const labelBankUtama = document.getElementById('labelBankUtama');
+
+    if (kode === '04') {
+      grupTujuan.classList.remove('d-none');
+      labelBankUtama.innerText = 'Dari Bank Asal (Mutasi Keluar)';
+    } else {
+      grupTujuan.classList.add('d-none');
+      labelBankUtama.innerText = 'Pilih Kode Bank';
+    }
+  }
+
+  function muatData() {
+    document.getElementById('statusLoading').innerText = 'Memperbarui...';
+    google.script.run
+      .withSuccessHandler(renderDashboard)
+      .withFailureHandler(tampilError)
+      .getDataDashboard();
+  }
+
+  function renderDashboard(res) {
+    daftarRiwayat = res.riwayat;
+
+    document.getElementById('saldo-B01').innerText = formatRupiah(res.saldo['B01']);
+    document.getElementById('saldo-B02').innerText = formatRupiah(res.saldo['B02']);
+    document.getElementById('saldo-B03').innerText = formatRupiah(res.saldo['B03']);
+
+    const tbody = document.getElementById('tabelRiwayat');
+    tbody.innerHTML = '';
+
+    if (res.riwayat.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada catatan transaksi.</td></tr>';
+    } else {
+      res.riwayat.forEach((item, idx) => {
+        const debitText = item.debit > 0 ? `<span class="text-success fw-semibold">+${formatRupiah(item.debit)}</span>` : '-';
+        const kreditText = item.kredit > 0 ? `<span class="text-danger fw-semibold">-${formatRupiah(item.kredit)}</span>` : '-';
+        
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.tanggal}</td>
+            <td><span class="badge bg-light text-dark border">${item.kodeBank}</span> ${item.namaBank}</td>
+            <td>
+              <strong>[${item.kodeTrx}]</strong> ${item.ketTrx}
+              ${item.catatan ? `<br><small class="text-muted">${item.catatan}</small>` : ''}
+            </td>
+            <td class="text-end">${debitText}</td>
+            <td class="text-end">${kreditText}</td>
+            <td class="text-center text-nowrap">
+              <button class="btn btn-warning btn-sm py-0 px-2" title="Koreksi" onclick="bukaModalEdit(${idx})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-danger btn-sm py-0 px-2" title="Hapus" onclick="konfirmasiHapus(${item.rowIndex})">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+    document.getElementById('statusLoading').innerText = 'Terhubung';
+  }
+
+  function prosesSimpan(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSimpan');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+    const formData = {
+      tanggal: document.getElementById('tanggal').value,
+      kodeTransaksi: document.getElementById('kodeTransaksi').value,
+      kodeBank: document.getElementById('kodeBank').value,
+      bankTujuan: document.getElementById('bankTujuan').value,
+      nominal: document.getElementById('nominal').value,
+      catatan: document.getElementById('catatan').value
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        renderDashboard(res);
+        document.getElementById('nominal').value = '';
+        document.getElementById('catatan').value = '';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Transaksi';
+      })
+      .withFailureHandler(function(err) {
+        tampilError(err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Transaksi';
+      })
+      .simpanTransaksi(formData);
+  }
+
+  function bukaModalEdit(idx) {
+    if (!modalEditObj) {
+      modalEditObj = new bootstrap.Modal(document.getElementById('modalEdit'));
+    }
+    const item = daftarRiwayat[idx];
+    document.getElementById('editRowIndex').value = item.rowIndex;
+    document.getElementById('editTanggal').value = item.tglInput;
+    document.getElementById('editKodeBank').value = item.kodeBank;
+    document.getElementById('editKodeTransaksi').value = item.kodeTrx;
+    document.getElementById('editNominal').value = item.nominal;
+    document.getElementById('editCatatan').value = item.catatan;
+    modalEditObj.show();
+  }
+
+  function prosesUpdate(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnUpdate');
+    btn.disabled = true;
+    btn.innerText = 'Menyimpan...';
+
+    const formEdit = {
+      rowIndex: document.getElementById('editRowIndex').value,
+      tanggal: document.getElementById('editTanggal').value,
+      kodeBank: document.getElementById('editKodeBank').value,
+      kodeTransaksi: document.getElementById('editKodeTransaksi').value,
+      nominal: document.getElementById('editNominal').value,
+      catatan: document.getElementById('editCatatan').value
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        renderDashboard(res);
+        modalEditObj.hide();
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan';
+      })
+      .withFailureHandler(function(err) {
+        tampilError(err);
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan';
+      })
+      .updateTransaksi(formEdit);
+  }
+
+  function konfirmasiHapus(rowIndex) {
+    if (confirm('Yakin ingin menghapus transaksi ini? Saldo bank akan otomatis dihitung ulang.')) {
+      document.getElementById('statusLoading').innerText = 'Menghapus...';
+      google.script.run
+        .withSuccessHandler(renderDashboard)
+        .withFailureHandler(tampilError)
+        .hapusTransaksi(rowIndex);
+    }
+  }
+
+  function tampilError(err) {
+    alert('Terjadi kesalahan: ' + err.message);
+    document.getElementById('statusLoading').innerText = 'Error';
+  }
+</script>
+
+</body>
+</html>
+
+
+    </div>
+  </div>
+</div>
